@@ -1,0 +1,78 @@
+---
+apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  annotations:
+    fabric8.io/metrics-path: dashboard/file/kubernetes-pods.json/?var-project=sample&var-version=0.0.1-SNAPSHOT
+    fabric8.io/scm-tag: HEAD
+    fabric8.io/scm-url: https://github.com/spring-projects/spring-boot/spring-boot-starter-parent/sample
+  labels:
+    provider: fabric8
+    project: sample
+    version: 0.0.1-SNAPSHOT
+    group: com.example
+  name: sample
+spec:
+  replicas: 4
+  selector:
+    project: sample
+    provider: fabric8
+    version: 0.0.1-SNAPSHOT
+    group: com.example
+  template:
+    metadata:
+      annotations:
+        fabric8.io/metrics-path: dashboard/file/kubernetes-pods.json/?var-project=sample&var-version=0.0.1-SNAPSHOT
+        fabric8.io/scm-tag: HEAD
+        fabric8.io/scm-url: https://github.com/spring-projects/spring-boot/spring-boot-starter-parent/sample
+      labels:
+        provider: fabric8
+        project: sample
+        version: 0.0.1-SNAPSHOT
+        group: com.example
+    spec:
+      containers:
+      - env:
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: JAVA_APP_DIR
+          value: /deployments
+        image: sample:latest
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 180
+        name: spring-boot
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        - containerPort: 9779
+          name: prometheus
+          protocol: TCP
+        - containerPort: 8778
+          name: jolokia
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 10
+        securityContext:
+          privileged: false
+  triggers:
+  - type: ConfigChange
+  - imageChangeParams:
+      automatic: true
+      containerNames:
+      - spring-boot
+      from:
+        kind: ImageStreamTag
+        name: sample:latest
+    type: ImageChange
